@@ -5,6 +5,9 @@
 #include "cinder/gl/Shader.h"
 #include "cinder/gl/Batch.h"
 #include "cinder/MayaCamUI.h"
+#include "cinder/Rand.h"
+
+#include "Particle.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -18,9 +21,12 @@ class MembraneApp : public AppNative {
 	CameraPersp mCam;
 
 	gl::GlslProgRef	mSimpleShader;
-	gl::GlslProgRef	mPostShader;
+	gl::GlslProgRef	mBloomShader;
 	gl::BatchRef mBatch;
-	gl::FboRef mPostFbo;
+	gl::FboRef mBloomFbo;
+	mat4 mCubeRotation;
+
+	vector<Particle> mParticles;
 
   public:
 	void prepareSettings( Settings* settings ) override;
@@ -35,7 +41,9 @@ class MembraneApp : public AppNative {
 
 void MembraneApp::prepareSettings( Settings* settings )
 {
-	settings->setWindowSize( 1000, 700 );
+	float displayWidth = settings->getDisplay()->getWidth();
+	float displayHeight = settings->getDisplay()->getHeight();
+	settings->setWindowSize( displayWidth, displayHeight );
 }
 
 void MembraneApp::setup()
@@ -54,20 +62,23 @@ void MembraneApp::setup()
 	}
 
 	try {
-		mPostShader = gl::GlslProg::create( loadAsset( "shaders/post.vert" ), loadAsset( "shaders/post.frag" ) );
+		mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 	}
 	catch( gl::GlslProgCompileExc ex ) {
 		console() << "Unable to compile shader:\n" << ex.what() << endl;
 	}
 
 	mBatch = gl::Batch::create( geom::Cube(), mSimpleShader );
-	// allocate post process FBO
+	mParticles = vector<Particle>( 200 );
+	// allocate bloom FBO
 	gl::Fbo::Format format;
 	format.setSamples( 4 );
 	format.setColorTextureFormat( gl::Texture2d::Format().internalFormat( GL_RGBA32F ) );
-	mPostFbo = gl::Fbo::create( getWindowWidth(), getWindowHeight(), format );
+	mBloomFbo = gl::Fbo::create( getWindowWidth(), getWindowHeight(), format );
 	gl::enableDepthWrite();
 	gl::enableDepthRead();
+	gl::enableAlphaBlending();
+	//gl::enableAdditiveBlending();
 }
 
 void MembraneApp::update()
@@ -77,21 +88,33 @@ void MembraneApp::update()
 
 void MembraneApp::draw()
 {
+	float time = ( float )getElapsedSeconds();
 	gl::clear( Color( 0, 0, 0 ) );
 	gl::color( Color( 0.2, 0.7, 1.0 ) );
 	// bind to fbo
-	mPostFbo->bindFramebuffer();
+	mBloomFbo->bindFramebuffer();
 	gl::clear( Color( 0, 0, 0 ) );
 	gl::setMatrices( mMayaCam.getCamera() );
-	mBatch->draw();
-	mPostFbo->unbindFramebuffer();
+
+	for( auto particle : mParticles ) {
+		gl::pushMatrices();
+		//gl::setModelMatrix( translate( particle.mPosition ) );
+		//gl::multModelMatrix( rotate( time, particle.mRotation ) );
+		gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
+		mBatch->getGlslProg()->uniform( "color", particle.mColor );
+		mBatch->draw();
+		gl::popMatrices();
+	}
+
+	mBloomFbo->unbindFramebuffer();
 	// back to screen co-ordinates
 	gl::setMatricesWindow( toPixels( getWindowSize() ) );
-	mPostShader->bind();
-	mPostFbo->getColorTexture()->bind();
-	mPostShader->uniform( "renderedTexture", 0 );
+	mBloomShader->bind();
+	mBloomFbo->getColorTexture()->bind();
+	mBloomShader->uniform( "renderedTexture", 0 );
+	gl::drawString( to_string( getAverageFps() ), vec2( 10.0f, 10.0f ) );
 	gl::drawSolidRect( getWindowBounds() );
-	mPostFbo->getColorTexture()->unbind();
+	mBloomFbo->getColorTexture()->unbind();
 }
 
 void MembraneApp::resize()
@@ -122,7 +145,7 @@ void MembraneApp::keyDown( KeyEvent event )
 			}
 
 			try {
-				mPostShader = gl::GlslProg::create( loadAsset( "shaders/post.vert" ), loadAsset( "shaders/post.frag" ) );
+				mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 			}
 			catch( gl::GlslProgCompileExc ex ) {
 				console() << "Unable to compile shader:\n" << ex.what() << endl;

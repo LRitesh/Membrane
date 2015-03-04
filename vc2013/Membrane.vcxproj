@@ -108,8 +108,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\MembraneApp.cpp" />
+    <ClCompile Include="..\src\Particle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\Particle.h" />
     <ClInclude Include="..\include\Resources.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
