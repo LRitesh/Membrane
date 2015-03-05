@@ -19,7 +19,7 @@ void MembraneApp::loadParams()
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
 	// setup phong lighting
-	mLight.Position = vec3( 0.0f, 0.0f, 15.5f );
+	mLight.Position = vec3( 0.0f, 0.0f, 0.0f );
 	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
@@ -68,8 +68,8 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Light", 0 );
 	mPhongShader->uniformBlock( "Material", 1 );
 
-	mBatch = gl::Batch::create( geom::Cube().size( 10.0f, 10.0f, 10.0f ), mPhongShader );
-	mParticles = vector<Particle>( 7 );
+	mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
+	mParticles = vector<Particle>( 50 );
 
 	// allocate bloom FBO
 	gl::Fbo::Format format;
@@ -105,12 +105,12 @@ void MembraneApp::draw()
 
 	for( auto particle : mParticles ) {
 		gl::pushMatrices();
-		gl::setModelMatrix( translate( particle.mPosition ) );
-		gl::multModelMatrix( rotate( time, particle.mRotation ) );
-		//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
-		mBatch->getGlslProg()->uniform( "color", particle.mColor );
+		//gl::setModelMatrix( translate( particle.mPosition ) );
+		//gl::multModelMatrix( rotate( time, particle.mRotation ) );
+		gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
+		mParticleBatch->getGlslProg()->uniform( "color", particle.mColor );
 
-		mBatch->draw();
+		mParticleBatch->draw();
 		gl::popMatrices();
 	}
 
@@ -157,7 +157,7 @@ void MembraneApp::keyDown( KeyEvent event )
 				console() << "Unable to compile shader:\n" << ex.what() << endl;
 			}
 
-			mBatch = gl::Batch::create( geom::Cube(), mPhongShader );
+			mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
 			mPhongShader->uniformBlock( "Light", 0 );
 			mPhongShader->uniformBlock( "Material", 1 );
 			break;

@@ -1,4 +1,5 @@
 /* basic Per Vertex Phong shader: Ambient + Specular + Diffuse */
+/* reference: GLSL CookBook (Chapter 2) */
 
 #version 330
 
