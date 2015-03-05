@@ -1,13 +1,14 @@
-/* basic Phong shader: Ambient + Specular + Diffuse */
+/* basic Per Vertex Phong shader: Ambient + Specular + Diffuse */
 
 #version 330
 
 uniform mat4 ciModelViewProjection;
 uniform mat4 ciModelView;
+uniform mat4 ciViewMatrix;
 uniform mat3 ciNormalMatrix;
 
 layout (std140) uniform Light{
-	vec4 Position;
+	vec3 Position;
 	vec3 La;	// ambient light intensity
 	vec3 Ld;	// diffuse light intensity
 	vec3 Ls;	// specular light intensity
@@ -32,9 +33,26 @@ void main( void )
 {
 	TexCoord = ciTexCoord0;
 	Normal = ciNormalMatrix * ciNormal;
-	gl_Position	= ciModelViewProjection * ciPosition;	
 
-	vec4 eyeCoords = ciModelView * ciPosition;
+	vec4 eyeVertexPosition = ciModelView * ciPosition;
+	vec4 eyeLightPosition = ciViewMatrix * vec4(Light.Position, 1.0);
+	vec3 s = normalize(vec3(eyeLightPosition - eyeVertexPosition)); // vector from vertex position to light position
+	vec3 v = normalize(-vec3(eyeVertexPosition)); // vector from vertex into camera
+	vec3 r = reflect( -s, Normal ); // reflect s around normal to get reflected ray
 
-	LightIntensity = Material.Kd;
+	// calculate ambient light
+	vec3 ambient = Light.La * Material.Ka;
+
+	// calculate diffuse light
+	float sDotN = max(dot(s, Normal), 0.0);
+	vec3 diffuse = Light.Ld * Material.Kd * sDotN;
+
+	// calculate specular light
+	vec3 specular = vec3(0.0);
+	if(sDotN > 0.0) {
+		specular = Light.Ls * Material.Ks * pow(max(dot(r,v), 0.0), Material.Shininess);
+	}
+
+	LightIntensity = ambient + diffuse + specular;
+	gl_Position	= ciModelViewProjection * ciPosition;		
 }

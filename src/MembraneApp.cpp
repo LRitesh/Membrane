@@ -15,19 +15,19 @@ void MembraneApp::prepareSettings( Settings* settings )
 
 void MembraneApp::loadParams()
 {
-	mBloomIntensity = 0.0f;
+	mBloomIntensity = 1.9f;
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
 	// setup phong lighting
-	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
-	mLight.La = vec3( 0.4f, 0.4f, 0.4f );
+	mLight.Position = vec3( 0.0f, 0.0f, 15.5f );
+	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
 
 	// setup phong material
-	mMaterial.Ka = vec3( 0.9f, 0.5f, 0.3f );
-	mMaterial.Kd = vec3( 0.9f, 0.5f, 0.3f );
-	mMaterial.Ks = vec3( 0.8f, 0.8f, 0.8f );
+	mMaterial.Ka = vec3( 1.0f, 1.0f, 1.0f );
+	mMaterial.Kd = vec3( 1.0f, 1.0f, 1.0f );
+	mMaterial.Ks = vec3( 1.0f, 1.0f, 1.0f );
 	mMaterial.Shininess = 100.0f;
 
 	mParams->addParam( "Light.Position", &mLight.Position );
@@ -68,7 +68,7 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Light", 0 );
 	mPhongShader->uniformBlock( "Material", 1 );
 
-	mBatch = gl::Batch::create( geom::Cube(), mPhongShader );
+	mBatch = gl::Batch::create( geom::Cube().size( 10.0f, 10.0f, 10.0f ), mPhongShader );
 	mParticles = vector<Particle>( 7 );
 
 	// allocate bloom FBO
