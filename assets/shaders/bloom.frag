@@ -1,9 +1,8 @@
 #version 330
 
 uniform sampler2D renderedTexture;
+uniform float bloomIntensity;
 
-in vec4	Color;
-in vec3	Normal;
 in vec2	TexCoord;
 
 float map(float value, float min1, float max1, float min2, float max2);
@@ -37,7 +36,7 @@ void main( void )
 	sum += texture2D(renderedTexture, vec2(TexCoord.x, TexCoord.y + 3.0*blurSize)) * 0.09;
 	sum += texture2D(renderedTexture, vec2(TexCoord.x, TexCoord.y + 4.0*blurSize)) * 0.05;
 
-	gl_FragColor = sum * 1.2 + texture2D(renderedTexture, TexCoord);
+	gl_FragColor = sum * bloomIntensity + texture2D(renderedTexture, TexCoord);
 }
 
 float map(float value, float min1, float max1, float min2, float max2)
