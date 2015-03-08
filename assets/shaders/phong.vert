@@ -22,6 +22,8 @@ layout (std140) uniform Material {
 	float Shininess;	// specular shininess
 };
 
+uniform vec4 color;
+
 in vec4	ciPosition;
 in vec2	ciTexCoord0;
 in vec3	ciNormal;

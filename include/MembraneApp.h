@@ -55,6 +55,7 @@ class MembraneApp : public ci::app::AppNative {
 	float mBloomIntensity;
 
 	// phong light
+	ci::gl::BatchRef mLightBatch;
 	LightInfo mLight;
 	ci::gl::UboRef mLightUbo;
 

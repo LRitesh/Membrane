@@ -15,11 +15,11 @@ void MembraneApp::prepareSettings( Settings* settings )
 
 void MembraneApp::loadParams()
 {
-	mBloomIntensity = 1.9f;
+	mBloomIntensity = 1.0f;
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
 	// setup phong lighting
-	mLight.Position = vec3( 0.0f, 0.0f, 0.0f );
+	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
 	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
@@ -69,7 +69,9 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Material", 1 );
 
 	mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
-	mParticles = vector<Particle>( 50 );
+	mParticles = vector<Particle>( 200 );
+
+	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 
 	// allocate bloom FBO
 	gl::Fbo::Format format;
@@ -85,7 +87,9 @@ void MembraneApp::setup()
 
 void MembraneApp::update()
 {
+	float time = ( float )getElapsedSeconds();
 	mCam.setAspectRatio( getWindowAspectRatio() );
+	mLight.Position = glm::vec3( sin( time ) * 15.0f, 0.0f, cos( time ) * 15.0f );
 
 	// buffer our data to our UBO to reflect any changed parameters
 	mLightUbo->bufferSubData( 0, sizeof( mLight ), &mLight );
@@ -113,6 +117,10 @@ void MembraneApp::draw()
 		mParticleBatch->draw();
 		gl::popMatrices();
 	}
+
+	gl::setModelMatrix( translate( mLight.Position ) );
+	mLightBatch->getGlslProg()->uniform( "color", ColorA( 1.0f, 1.0f, 1.0f, 1.0f ) );
+	mLightBatch->draw();
 
 	mBloomFbo->unbindFramebuffer();
 	// back to screen co-ordinates
@@ -158,6 +166,7 @@ void MembraneApp::keyDown( KeyEvent event )
 			}
 
 			mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
+			mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 			mPhongShader->uniformBlock( "Light", 0 );
 			mPhongShader->uniformBlock( "Material", 1 );
 			break;
@@ -173,4 +182,4 @@ void MembraneApp::keyDown( KeyEvent event )
 	}
 }
 
-CINDER_APP_NATIVE( MembraneApp, RendererGl )
+CINDER_APP_NATIVE( MembraneApp, RendererGl( RendererGl::Options().msaa( 0 ) ) )
