@@ -1,7 +1,7 @@
 #version 330
 
 layout(points) in;
-layout(triangle_strip, max_vertices = 64) out;
+layout(triangle_strip, max_vertices = 24) out;
 
 uniform mat4 ciModelViewProjection;
 uniform mat4 ciModelView;
@@ -68,8 +68,6 @@ vec4 rotateAroundZ( float angle, vec4 v )
 
 vec3 getLightIntensityForVertex(vec4 pos, vec3 normal) {
 	vec3 newNormal = normalize(ciNormalMatrix * normal);
-
-	// normal = ciNormalMatrix * normal;
 	vec4 eyeVertexPosition = ciModelView * pos;
 	vec4 eyeLightPosition = ciViewMatrix * vec4(Position, 1.0);
 	vec3 s = normalize(vec3(eyeLightPosition - eyeVertexPosition)); // vector from vertex position to light position
@@ -89,14 +87,14 @@ vec3 getLightIntensityForVertex(vec4 pos, vec3 normal) {
 		specular = Ls * Ks * pow(max(dot(r,v), 0.0), Shininess);
 	}
 
-	return ambient + diffuse + specular;
+	return (ambient + diffuse + specular);
 }
 
 void main()
 {
 	float scaleX = scale;
-	float scaleY = scale;
-	float scaleZ = scale;
+	float scaleY = scaleX;
+	float scaleZ = scaleY;
 	vec3 rotate = vec3(0.0);
 
 	vec4 vertex = gl_in[0].gl_Position;
@@ -148,44 +146,44 @@ void main()
 
 	// front
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(-scaleX, scaleY, scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(scaleX, scaleY, scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(-scaleX, -scaleY, scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(scaleX, -scaleY, scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 	EndPrimitive();
 
 	// back
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(-scaleX, scaleY, -scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(scaleX, scaleY, -scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(-scaleX, -scaleY, -scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 
 	newVertex = vertex + rotateAroundX( rotate.x, rotateAroundY( rotate.y, rotateAroundZ( rotate.z, vec4(scaleX, -scaleY, -scaleZ, 0))));         
-	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, 1));
+	LightIntensityPerVertex = getLightIntensityForVertex(newVertex, vec3(0, 0, -1));
 	gl_Position = ciModelViewProjection * ( newVertex);
 	EmitVertex();
 	EndPrimitive();
