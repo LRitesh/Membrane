@@ -8,8 +8,8 @@ using namespace std;
 
 void MembraneApp::prepareSettings( Settings* settings )
 {
-	float displayWidth = settings->getDisplay()->getWidth();
-	float displayHeight = settings->getDisplay()->getHeight();
+	float displayWidth = 800;// settings->getDisplay()->getWidth();
+	float displayHeight = 600;// settings->getDisplay()->getHeight();
 	settings->setWindowSize( displayWidth, displayHeight );
 }
 
@@ -18,9 +18,12 @@ void MembraneApp::loadParams()
 	mBloomIntensity = 1.0f;
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
+	mParticleScale = 3.0f;
+	mParams->addParam( "Particle Scale", &mParticleScale ).min( 0.0f ).max( 10.0f ).step( 0.1f );
+
 	// setup phong lighting
 	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
-	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
+	mLight.La = vec3( 0.0f, 0.03f, 0.03f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
 
@@ -53,7 +56,7 @@ void MembraneApp::setup()
 	// load shaders
 	try {
 		mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
-		mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ) );
+		mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
 		mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 	}
 	catch( gl::GlslProgCompileExc ex ) {
@@ -68,8 +71,8 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Light", 0 );
 	mPhongShader->uniformBlock( "Material", 1 );
 
-	mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
-	mParticles = vector<Particle>( 200 );
+	mParticleBatch = gl::VertBatch::create(); //gl::Batch::create( geom::Cube(), mPhongShader );
+	mParticles = vector<Particle>( 1 );
 
 	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 
@@ -89,7 +92,7 @@ void MembraneApp::update()
 {
 	float time = ( float )getElapsedSeconds();
 	mCam.setAspectRatio( getWindowAspectRatio() );
-	mLight.Position = glm::vec3( sin( time ) * 15.0f, 0.0f, cos( time ) * 15.0f );
+	mLight.Position = glm::vec3( sin( time ) * 15.0f, cos( time ) * 15.0f, cos( time ) * 15.0f );
 
 	// buffer our data to our UBO to reflect any changed parameters
 	mLightUbo->bufferSubData( 0, sizeof( mLight ), &mLight );
@@ -109,11 +112,13 @@ void MembraneApp::draw()
 
 	for( auto particle : mParticles ) {
 		gl::pushMatrices();
-		//gl::setModelMatrix( translate( particle.mPosition ) );
+		gl::setModelMatrix( translate( particle.mPosition ) );
 		//gl::multModelMatrix( rotate( time, particle.mRotation ) );
-		gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
-		mParticleBatch->getGlslProg()->uniform( "color", particle.mColor );
-
+		//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
+		mPhongShader->bind();
+		mPhongShader->uniform( "color", particle.mColor );
+		mPhongShader->uniform( "scale", mParticleScale );
+		mParticleBatch->vertex( particle.mPosition );
 		mParticleBatch->draw();
 		gl::popMatrices();
 	}
@@ -158,14 +163,14 @@ void MembraneApp::keyDown( KeyEvent event )
 		case KeyEvent::KEY_y:
 			try {
 				mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
-				mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ) );
+				mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
 				mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 			}
 			catch( gl::GlslProgCompileExc ex ) {
 				console() << "Unable to compile shader:\n" << ex.what() << endl;
 			}
 
-			mParticleBatch = gl::Batch::create( geom::Cube(), mPhongShader );
+			mParticleBatch = gl::VertBatch::create();
 			mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 			mPhongShader->uniformBlock( "Light", 0 );
 			mPhongShader->uniformBlock( "Material", 1 );
@@ -182,4 +187,4 @@ void MembraneApp::keyDown( KeyEvent event )
 	}
 }
 
-CINDER_APP_NATIVE( MembraneApp, RendererGl( RendererGl::Options().msaa( 0 ) ) )
+CINDER_APP_NATIVE( MembraneApp, RendererGl( RendererGl::Options().msaa( 4 ) ) )
