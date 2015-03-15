@@ -18,7 +18,7 @@ void MembraneApp::loadParams()
 	mBloomIntensity = 1.0f;
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
-	mParticleScale = 5.0f;
+	mParticleScale = 8.0f;
 	mParams->addParam( "Particle Scale", &mParticleScale ).min( 0.0f ).max( 10.0f ).step( 0.1f );
 
 	// setup phong lighting
@@ -31,7 +31,7 @@ void MembraneApp::loadParams()
 	mMaterial.Ka = vec3( 1.0f, 1.0f, 1.0f );
 	mMaterial.Kd = vec3( 1.0f, 1.0f, 1.0f );
 	mMaterial.Ks = vec3( 1.0f, 1.0f, 1.0f );
-	mMaterial.Shininess = 100.0f;
+	mMaterial.Shininess = 40.0f;
 
 	mParams->addParam( "Light.Position", &mLight.Position );
 	mParams->addParam( "Light.La", &mLight.La );
@@ -73,7 +73,7 @@ void MembraneApp::setup()
 
 	mParticleBatch = gl::VertBatch::create(); //gl::Batch::create( geom::Cube(), mPhongShader );
 	mParticleBatch->vertex( vec3( 0.0f ) );
-	mParticles = vector<Particle>( 10 );
+	mParticles = vector<Particle>( 100 );
 
 	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 
@@ -113,7 +113,7 @@ void MembraneApp::draw()
 	gl::setMatrices( mMayaCam.getCamera() );
 
 	for( auto particle : mParticles ) {
-		//gl::pushMatrices();
+		gl::pushMatrices();
 		gl::setModelMatrix( translate( particle.mPosition ) );
 		gl::multModelMatrix( rotate( time, particle.mRotation ) );
 		//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
@@ -121,14 +121,14 @@ void MembraneApp::draw()
 		mPhongShader->uniform( "color", particle.mColor );
 		mPhongShader->uniform( "scale", mParticleScale );
 		mParticleBatch->draw();
-		//gl::popMatrices();
+		gl::popMatrices();
 	}
 
 	gl::setModelMatrix( translate( mLight.Position ) );
 	mLightBatch->getGlslProg()->uniform( "color", ColorA( 1.0f, 1.0f, 1.0f, 1.0f ) );
 	mLightBatch->draw();
-
 	mBloomFbo->unbindFramebuffer();
+
 	// back to screen co-ordinates
 	gl::setMatricesWindow( toPixels( getWindowSize() ) );
 	mBloomShader->bind();
@@ -190,4 +190,4 @@ void MembraneApp::keyDown( KeyEvent event )
 	}
 }
 
-CINDER_APP_NATIVE( MembraneApp, RendererGl( RendererGl::Options().msaa( 0 ) ) )
+CINDER_APP_NATIVE( MembraneApp, RendererGl( RendererGl::Options().msaa( 4 ) ) )

@@ -7,6 +7,8 @@ uniform mat4 ciModelViewProjection;
 uniform mat4 ciModelView;
 uniform mat4 ciViewMatrix;
 uniform mat3 ciNormalMatrix;
+
+uniform vec4 color;
 uniform float scale;
 
 layout (std140) uniform Light{
@@ -87,7 +89,7 @@ vec3 getLightIntensityForVertex(vec4 pos, vec3 normal) {
 		specular = Ls * Ks * pow(max(dot(r,v), 0.0), Shininess);
 	}
 
-	return (ambient + diffuse + specular);
+	return (ambient + diffuse + specular)/3.0;
 }
 
 void main()
