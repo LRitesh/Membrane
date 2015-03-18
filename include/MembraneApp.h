@@ -6,6 +6,7 @@
 #include "cinder/gl/Batch.h"
 #include "cinder/gl/Ubo.h"
 #include "cinder/gl/Vbo.h"
+#include "cinder/gl/Vao.h"
 #include "cinder/MayaCamUI.h"
 #include "cinder/params/Params.h"
 
@@ -41,7 +42,11 @@ class MembraneApp : public ci::app::AppNative {
 	ci::gl::BatchRef mParticleBatch;
 	std::vector<Particle> mParticles;
 	float mParticleScale;
-	ci::gl::VboRef mParticlesVbo;
+	ci::gl::VaoRef mParticleAttributes[2];
+	// two VBOs for transform feedback
+	ci::gl::VboRef mParticlesVbo[2];
+	std::uint32_t mSourceIndex = 0;
+	std::uint32_t mDestinationIndex = 1;
 
 	ci::params::InterfaceGlRef mParams;
 
@@ -50,6 +55,7 @@ class MembraneApp : public ci::app::AppNative {
 	ci::CameraPersp mCam;
 
 	// shaders
+	ci::gl::GlslProgRef mUpdateShader;
 	ci::gl::GlslProgRef	mSimpleShader;
 	ci::gl::GlslProgRef	mPhongShader;
 	ci::gl::GlslProgRef	mBloomShader;

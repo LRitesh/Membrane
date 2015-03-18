@@ -1,10 +1,13 @@
 #include "MembraneApp.h"
 
 #include "cinder/Rand.h"
+#include "cinder/gl/Context.h"
 
 using namespace ci;
 using namespace ci::app;
 using namespace std;
+
+#define NUM_PARTICLES 10
 
 void MembraneApp::prepareSettings( Settings* settings )
 {
@@ -18,12 +21,12 @@ void MembraneApp::loadParams()
 	mBloomIntensity = 1.0f;
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
-	mParticleScale = 8.0f;
+	mParticleScale = 2.0f;
 	mParams->addParam( "Particle Scale", &mParticleScale ).min( 0.0f ).max( 10.0f ).step( 0.01f );
 
 	// setup phong lighting
 	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
-	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
+	mLight.La = vec3( 1.0f, 0.0f, 0.0f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
 
@@ -58,6 +61,13 @@ void MembraneApp::setup()
 		mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
 		mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
 		mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
+		mUpdateShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/update.vert" ) )
+		                                      .feedbackFormat( GL_INTERLEAVED_ATTRIBS )
+		                                      .feedbackVaryings( { "oPosition", "oColor", "oRotation" } )
+		                                      .attribLocation( "position", 0 )
+		                                      .attribLocation( "color", 1 )
+		                                      .attribLocation( "rotation", 2 )
+		                                    );
 	}
 	catch( gl::GlslProgCompileExc ex ) {
 		console() << "Unable to compile shader:\n" << ex.what() << endl;
@@ -71,14 +81,25 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Light", 0 );
 	mPhongShader->uniformBlock( "Material", 1 );
 
-	// create particles
-	mParticles = vector<Particle>( 100 );
-	auto vboParticles = vector<Particle>( 1 );
+	// create particles and VBOs
+	mParticles = vector<Particle>( NUM_PARTICLES );
+	mParticlesVbo[mSourceIndex] = gl::Vbo::create( GL_ARRAY_BUFFER, mParticles.size() * sizeof( Particle ), mParticles.data(), GL_STATIC_DRAW );
+	mParticlesVbo[mDestinationIndex] = gl::Vbo::create( GL_ARRAY_BUFFER, mParticles.size() * sizeof( Particle ), nullptr, GL_STATIC_DRAW );
 
-	mParticlesVbo = gl::Vbo::create( GL_ARRAY_BUFFER, vboParticles, GL_STATIC_DRAW );
-	geom::BufferLayout particleLayout;
-	auto mesh = gl::VboMesh::create( vboParticles.size(), GL_POINTS, { { particleLayout, mParticlesVbo } } );
-	mParticleBatch = gl::Batch::create( mesh, mPhongShader );
+	// Describe the particle layout for OpenGL.
+	for( int i = 0; i < 2; ++i ) {
+		mParticleAttributes[i] = gl::Vao::create();
+		gl::ScopedVao vao( mParticleAttributes[i] );
+
+		// Define attributes as offsets into the bound particle buffer
+		gl::ScopedBuffer buffer( mParticlesVbo[i] );
+		gl::enableVertexAttribArray( 0 );
+		gl::enableVertexAttribArray( 1 );
+		gl::enableVertexAttribArray( 2 );
+		gl::vertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( Particle ), ( const GLvoid* )offsetof( Particle, mPosition ) );
+		gl::vertexAttribPointer( 1, 4, GL_FLOAT, GL_FALSE, sizeof( Particle ), ( const GLvoid* )offsetof( Particle, mColor ) );
+		gl::vertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, sizeof( Particle ), ( const GLvoid* )offsetof( Particle, mRotation ) );
+	}
 
 	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 
@@ -102,6 +123,24 @@ void MembraneApp::update()
 	// buffer our data to our UBO to reflect any changed parameters
 	mLightUbo->bufferSubData( 0, sizeof( mLight ), &mLight );
 	mMaterialUbo->bufferSubData( 0, sizeof( mMaterial ), &mMaterial );
+
+	// Update particles on the GPU
+	gl::ScopedGlslProg prog( mUpdateShader );
+	gl::ScopedState rasterizer( GL_RASTERIZER_DISCARD, true );	// turn off fragment stage
+
+	// Bind the source data (Attributes refer to specific buffers).
+	gl::ScopedVao source( mParticleAttributes[mSourceIndex] );
+	// Bind destination as buffer base.
+	gl::bindBufferBase( GL_TRANSFORM_FEEDBACK_BUFFER, 0, mParticlesVbo[mDestinationIndex] );
+	gl::beginTransformFeedback( GL_POINTS );
+
+	// Draw source into destination, performing our vertex transformations.
+	gl::drawArrays( GL_POINTS, 0, NUM_PARTICLES );
+
+	gl::endTransformFeedback();
+
+	// Swap source and destination for next loop
+	std::swap( mSourceIndex, mDestinationIndex );
 }
 
 void MembraneApp::draw()
@@ -115,16 +154,24 @@ void MembraneApp::draw()
 	gl::clear( Color( 0, 0, 0 ) );
 	gl::setMatrices( mMayaCam.getCamera() );
 
-	for( auto particle : mParticles ) {
-		gl::pushMatrices();
-		gl::setModelMatrix( translate( particle.mPosition ) );
-		gl::multModelMatrix( rotate( time, particle.mRotation ) );
-		//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
+	//for( auto particle : mParticles ) {
+	//	gl::pushMatrices();
+	//	gl::setModelMatrix( translate( particle.mPosition ) );
+	//	gl::multModelMatrix( rotate( time, particle.mRotation ) );
+	//	//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
+	//	mPhongShader->bind();
+	//	mPhongShader->uniform( "color", particle.mColor );
+	//	mPhongShader->uniform( "scale", mParticleScale );
+	//	mParticleBatch->draw();
+	//	gl::popMatrices();
+	//}
+
+	{
 		mPhongShader->bind();
-		mPhongShader->uniform( "color", particle.mColor );
 		mPhongShader->uniform( "scale", mParticleScale );
-		mParticleBatch->draw();
-		gl::popMatrices();
+		gl::ScopedVao vao( mParticleAttributes[mSourceIndex] );
+		gl::context()->setDefaultShaderVars();
+		gl::drawArrays( GL_POINTS, 0, NUM_PARTICLES );
 	}
 
 	gl::setModelMatrix( translate( mLight.Position ) );
@@ -168,6 +215,13 @@ void MembraneApp::keyDown( KeyEvent event )
 				mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
 				mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
 				mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
+				mUpdateShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/update.vert" ) )
+				                                      .feedbackFormat( GL_INTERLEAVED_ATTRIBS )
+				                                      .feedbackVaryings( { "oPosition", "oColor", "oRotation" } )
+				                                      .attribLocation( "position", 0 )
+				                                      .attribLocation( "color", 1 )
+				                                      .attribLocation( "rotation", 2 )
+				                                    );
 			}
 			catch( gl::GlslProgCompileExc ex ) {
 				console() << "Unable to compile shader:\n" << ex.what() << endl;
