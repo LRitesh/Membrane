@@ -5,6 +5,7 @@
 #include "cinder/gl/Shader.h"
 #include "cinder/gl/Batch.h"
 #include "cinder/gl/Ubo.h"
+#include "cinder/gl/Vbo.h"
 #include "cinder/MayaCamUI.h"
 #include "cinder/params/Params.h"
 
@@ -37,9 +38,10 @@ class MembraneApp : public ci::app::AppNative {
 	bool mIsFullScreen;
 
 	// particles
-	ci::gl::VertBatchRef mParticleBatch;
+	ci::gl::BatchRef mParticleBatch;
 	std::vector<Particle> mParticles;
 	float mParticleScale;
+	ci::gl::VboRef mParticlesVbo;
 
 	ci::params::InterfaceGlRef mParams;
 

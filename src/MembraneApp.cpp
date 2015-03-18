@@ -19,7 +19,7 @@ void MembraneApp::loadParams()
 	mParams->addParam( "Bloom Intensity", &mBloomIntensity ).min( 0.0f ).max( 5.0f ).step( 0.1f );
 
 	mParticleScale = 8.0f;
-	mParams->addParam( "Particle Scale", &mParticleScale ).min( 0.0f ).max( 10.0f ).step( 0.1f );
+	mParams->addParam( "Particle Scale", &mParticleScale ).min( 0.0f ).max( 10.0f ).step( 0.01f );
 
 	// setup phong lighting
 	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
@@ -71,9 +71,12 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Light", 0 );
 	mPhongShader->uniformBlock( "Material", 1 );
 
-	mParticleBatch = gl::VertBatch::create(); //gl::Batch::create( geom::Cube(), mPhongShader );
-	mParticleBatch->vertex( vec3( 0.0f ) );
-	mParticles = vector<Particle>( 100 );
+	// create particles
+	mParticles = vector<Particle>( 10 );
+	mParticlesVbo = gl::Vbo::create( GL_ARRAY_BUFFER, mParticles, GL_STATIC_DRAW );
+	geom::BufferLayout particleLayout;
+	auto mesh = gl::VboMesh::create( mParticles.size(), GL_POINTS, { { particleLayout, mParticlesVbo } } );
+	mParticleBatch = gl::Batch::create( mesh, mPhongShader );
 
 	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 
@@ -101,8 +104,6 @@ void MembraneApp::update()
 
 void MembraneApp::draw()
 {
-	mParticleBatch->vertex( vec3( 0.0f ) );
-
 	float time = ( float )getElapsedSeconds();
 	gl::clear( Color( 0, 0, 0 ) );
 	gl::color( Color( 0.2, 0.7, 1.0 ) );
@@ -139,8 +140,6 @@ void MembraneApp::draw()
 	gl::drawSolidRect( getWindowBounds() );
 	mBloomFbo->getColorTexture()->unbind();
 	mParams->draw();
-
-	mParticleBatch->clear();
 }
 
 void MembraneApp::resize()
@@ -172,8 +171,6 @@ void MembraneApp::keyDown( KeyEvent event )
 				console() << "Unable to compile shader:\n" << ex.what() << endl;
 			}
 
-			mParticleBatch = gl::VertBatch::create();
-			mParticleBatch->vertex( vec3( 0.0f ) );
 			mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
 			mPhongShader->uniformBlock( "Light", 0 );
 			mPhongShader->uniformBlock( "Material", 1 );
