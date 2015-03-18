@@ -72,10 +72,12 @@ void MembraneApp::setup()
 	mPhongShader->uniformBlock( "Material", 1 );
 
 	// create particles
-	mParticles = vector<Particle>( 10 );
-	mParticlesVbo = gl::Vbo::create( GL_ARRAY_BUFFER, mParticles, GL_STATIC_DRAW );
+	mParticles = vector<Particle>( 100 );
+	auto vboParticles = vector<Particle>( 1 );
+
+	mParticlesVbo = gl::Vbo::create( GL_ARRAY_BUFFER, vboParticles, GL_STATIC_DRAW );
 	geom::BufferLayout particleLayout;
-	auto mesh = gl::VboMesh::create( mParticles.size(), GL_POINTS, { { particleLayout, mParticlesVbo } } );
+	auto mesh = gl::VboMesh::create( vboParticles.size(), GL_POINTS, { { particleLayout, mParticlesVbo } } );
 	mParticleBatch = gl::Batch::create( mesh, mPhongShader );
 
 	mLightBatch = gl::Batch::create( geom::Sphere().radius( 0.5f ), mSimpleShader );
