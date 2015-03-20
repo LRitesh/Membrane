@@ -26,7 +26,7 @@ void MembraneApp::loadParams()
 
 	// setup phong lighting
 	mLight.Position = vec3( 0.0f, 0.0f, 10.0f );
-	mLight.La = vec3( 1.0f, 0.0f, 0.0f );
+	mLight.La = vec3( 0.0f, 0.0f, 0.0f );
 	mLight.Ld = vec3( 1.0f, 1.0f, 1.0f );
 	mLight.Ls = vec3( 1.0f, 1.0f, 1.0f );
 
@@ -59,14 +59,19 @@ void MembraneApp::setup()
 	// load shaders
 	try {
 		mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
-		mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
+		mPhongShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/phong.vert" ) )
+		                                     .fragment( loadAsset( "shaders/phong.frag" ) )
+		                                     .geometry( loadAsset( "shaders/phong.geom" ) )
+		                                     .attribLocation( "iPosition", 0 )
+		                                     .attribLocation( "iColor", 1 )
+		                                     .attribLocation( "iRotation", 2 ) );
 		mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 		mUpdateShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/update.vert" ) )
 		                                      .feedbackFormat( GL_INTERLEAVED_ATTRIBS )
 		                                      .feedbackVaryings( { "oPosition", "oColor", "oRotation" } )
-		                                      .attribLocation( "position", 0 )
-		                                      .attribLocation( "color", 1 )
-		                                      .attribLocation( "rotation", 2 )
+		                                      .attribLocation( "iPosition", 0 )
+		                                      .attribLocation( "iColor", 1 )
+		                                      .attribLocation( "iRotation", 2 )
 		                                    );
 	}
 	catch( gl::GlslProgCompileExc ex ) {
@@ -154,18 +159,6 @@ void MembraneApp::draw()
 	gl::clear( Color( 0, 0, 0 ) );
 	gl::setMatrices( mMayaCam.getCamera() );
 
-	//for( auto particle : mParticles ) {
-	//	gl::pushMatrices();
-	//	gl::setModelMatrix( translate( particle.mPosition ) );
-	//	gl::multModelMatrix( rotate( time, particle.mRotation ) );
-	//	//gl::multModelMatrix( rotate( time / 2.0f, particle.mRotation ) * translate( particle.mPosition ) );
-	//	mPhongShader->bind();
-	//	mPhongShader->uniform( "color", particle.mColor );
-	//	mPhongShader->uniform( "scale", mParticleScale );
-	//	mParticleBatch->draw();
-	//	gl::popMatrices();
-	//}
-
 	{
 		mPhongShader->bind();
 		mPhongShader->uniform( "scale", mParticleScale );
@@ -213,14 +206,19 @@ void MembraneApp::keyDown( KeyEvent event )
 		case KeyEvent::KEY_y:
 			try {
 				mSimpleShader = gl::GlslProg::create( loadAsset( "shaders/simple.vert" ), loadAsset( "shaders/simple.frag" ) );
-				mPhongShader = gl::GlslProg::create( loadAsset( "shaders/phong.vert" ), loadAsset( "shaders/phong.frag" ), loadAsset( "shaders/phong.geom" ) );
+				mPhongShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/phong.vert" ) )
+				                                     .fragment( loadAsset( "shaders/phong.frag" ) )
+				                                     .geometry( loadAsset( "shaders/phong.geom" ) )
+				                                     .attribLocation( "iPosition", 0 )
+				                                     .attribLocation( "iColor", 1 )
+				                                     .attribLocation( "iRotation", 2 ) );
 				mBloomShader = gl::GlslProg::create( loadAsset( "shaders/bloom.vert" ), loadAsset( "shaders/bloom.frag" ) );
 				mUpdateShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "shaders/update.vert" ) )
 				                                      .feedbackFormat( GL_INTERLEAVED_ATTRIBS )
 				                                      .feedbackVaryings( { "oPosition", "oColor", "oRotation" } )
-				                                      .attribLocation( "position", 0 )
-				                                      .attribLocation( "color", 1 )
-				                                      .attribLocation( "rotation", 2 )
+				                                      .attribLocation( "iPosition", 0 )
+				                                      .attribLocation( "iColor", 1 )
+				                                      .attribLocation( "iRotation", 2 )
 				                                    );
 			}
 			catch( gl::GlslProgCompileExc ex ) {

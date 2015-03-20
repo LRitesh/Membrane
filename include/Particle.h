@@ -7,7 +7,7 @@ class Particle {
 	~Particle() {};
 
 	glm::vec3 mPosition;
-	glm::vec3 mRotation;
 	glm::vec4 mColor;
+	glm::vec3 mRotation;
 };
 

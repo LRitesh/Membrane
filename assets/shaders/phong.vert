@@ -3,11 +3,18 @@
 
 #version 330
 
-uniform vec4 color;
-
 in vec4	ciPosition;
+
+in vec3 iPosition;
+in vec4 iColor;
+in vec3 iRotation;
+
+out vec3 vRotation;
+out vec4 vColor;
 
 void main( void )
 {
-	gl_Position	= ciPosition;		
+	vColor = iColor; 	
+	vRotation = iRotation;	
+	gl_Position	= ciPosition;	
 }

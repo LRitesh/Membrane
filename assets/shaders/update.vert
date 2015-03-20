@@ -1,8 +1,8 @@
 #version 150 core
 
-in vec3   position;
-in vec4   color;
-in vec3   rotation;
+in vec3   iPosition;
+in vec4   iColor;
+in vec3   iRotation;
 
 out vec3  oPosition;
 out vec4  oColor;
@@ -44,7 +44,7 @@ vec4 rotateAroundZ( float angle, vec4 v )
 
 void main()
 {
-	oPosition = position + vec3(0.0, 0.0, 0.0);// rotateAroundX( rotation.x, rotateAroundY( rotation.y, rotateAroundZ( rotation.z, vec4(position.x, position.y, position.z, position.w))));         
-	oColor = color;
-	oRotation = rotation;
+	oPosition = iPosition;// vec3(rotateAroundX( rotation.x, rotateAroundY( rotation.y, rotateAroundZ( rotation.z, vec4(position.x, position.y, position.z, position.w)))));         
+	oColor = iColor;
+	oRotation = iRotation;
 }

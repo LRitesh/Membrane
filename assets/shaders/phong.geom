@@ -8,7 +8,6 @@ uniform mat4 ciModelView;
 uniform mat4 ciViewMatrix;
 uniform mat3 ciNormalMatrix;
 
-uniform vec4 color;
 uniform float scale;
 
 layout (std140) uniform Light{
@@ -26,6 +25,9 @@ layout (std140) uniform Material {
 };
 
 const float PI = 3.1415926;
+
+in vec4 vColor[];
+in vec3 vRotation[];
 
 out vec3 LightIntensityPerVertex;
 
@@ -97,8 +99,8 @@ void main()
 	float scaleX = scale;
 	float scaleY = scaleX;
 	float scaleZ = scaleY;
-	vec3 rotate = vec3(0.0);
 
+	vec3 rotate = vRotation[0];
 	vec4 vertex = gl_in[0].gl_Position;
 	vec4 newVertex;         
 
