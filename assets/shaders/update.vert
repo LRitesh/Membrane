@@ -8,6 +8,8 @@ out vec3  oPosition;
 out vec4  oColor;
 out vec3  oRotation;
 
+uniform float time;
+
 vec4 rotateAroundX( float angle, vec4 v )
 {
      float sa = sin( angle );
@@ -44,7 +46,7 @@ vec4 rotateAroundZ( float angle, vec4 v )
 
 void main()
 {
-	oPosition = iPosition;// vec3(rotateAroundX( rotation.x, rotateAroundY( rotation.y, rotateAroundZ( rotation.z, vec4(position.x, position.y, position.z, position.w)))));         
+	oPosition = iPosition;
 	oColor = iColor;
-	oRotation = iRotation;
+	oRotation = iRotation + sin(time / 100.0);
 }
