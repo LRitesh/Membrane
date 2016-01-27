@@ -37,6 +37,7 @@ struct MaterialInfo {
 
 class MembraneApp : public ci::app::App {
 	bool mIsFullScreen;
+	bool mDrawLight;
 
 	// particles
 	ci::gl::BatchRef mParticleBatch;

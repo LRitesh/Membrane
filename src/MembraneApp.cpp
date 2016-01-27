@@ -7,7 +7,7 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 
-#define NUM_PARTICLES 100
+#define NUM_PARTICLES 10000
 
 void MembraneApp::prepareSettings( Settings* settings )
 {
@@ -50,6 +50,7 @@ void MembraneApp::loadParams()
 void MembraneApp::setup()
 {
 	mIsFullScreen = false;
+	mDrawLight = false;
 	setFullScreen( mIsFullScreen );
 	mCam.setPerspective( 60.0f, getWindowAspectRatio(), 1, 1000 );
 	mCamUi = CameraUi( &mCam, getWindow(), -1 );
@@ -172,7 +173,10 @@ void MembraneApp::draw()
 
 	gl::setModelMatrix( translate( mLight.Position ) );
 	mLightBatch->getGlslProg()->uniform( "color", ColorA( 1.0f, 1.0f, 1.0f, 1.0f ) );
-	mLightBatch->draw();
+
+	if( mDrawLight )
+		mLightBatch->draw();
+
 	mBloomFbo->unbindFramebuffer();
 
 	// back to screen co-ordinates
@@ -233,8 +237,16 @@ void MembraneApp::keyDown( KeyEvent event )
 			setFullScreen( mIsFullScreen );
 			break;
 
+		case KeyEvent::KEY_l:
+			mDrawLight = !mDrawLight;
+			break;
+
 		case KeyEvent::KEY_ESCAPE:
 			quit();
+			break;
+
+		case KeyEvent::KEY_SPACE:
+			writeImage( "screenshot.png", copyWindowSurface() );
 			break;
 	}
 }
