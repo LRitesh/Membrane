@@ -1,0 +1,3 @@
+[submodule "ampm"]
+	path = ampm
+	url = https://github.com/stimulant/ampm.git
